@@ -31,6 +31,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.AbstractServerHttpResponse;
 import org.springframework.util.Assert;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * @author Spencer Gibb
@@ -176,7 +177,20 @@ public final class ServerWebExchangeUtils {
 
 	public static boolean containsEncodedParts(URI uri) {
 		boolean encoded = (uri.getRawQuery() != null && uri.getRawQuery().contains("%"))
-				|| (uri.getPath() != null && uri.getRawPath().contains("%"));
+				|| (uri.getRawPath() != null && uri.getRawPath().contains("%"));
+
+		// Verify if it is really fully encoded. Treat partial encoded as uncoded.
+		if (encoded) {
+			try {
+				UriComponentsBuilder.fromUri(uri).build(true);
+				return true;
+			}
+			catch (IllegalArgumentException ignore) {
+			}
+
+			return false;
+		}
+
 		return encoded;
 	}
 

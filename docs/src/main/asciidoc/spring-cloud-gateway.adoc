@@ -21,6 +21,14 @@ for details on setting up your build system with the current Spring Cloud Releas
 
 If you include the starter, but, for some reason, you do not want the gateway to be enabled, set `spring.cloud.gateway.enabled=false`.
 
+IMPORTANT: Spring Cloud Gateway is built upon https://spring.io/projects/spring-boot#learn[Spring Boot 2.0],
+https://docs.spring.io/spring/docs/current/spring-framework-reference/web-reactive.html[Spring WebFlux],
+and https://projectreactor.io/docs[Project Reactor].  As a consequence
+many of the familiar synchronous libraries (Spring Data and Spring Security, for example) and patterns you may
+not apply when using Spring Cloud Gateway.  If you are unfamiliar with these projects we suggest you
+begin by reading their documentation to familiarize yourself with some of the new concepts before
+working with Spring Cloud Gateway.
+
 IMPORTANT: Spring Cloud Gateway requires the Netty runtime provided by Spring Boot and Spring Webflux. It does not work in a traditional Servlet Container or built as a WAR.
 
 == Glossary
@@ -647,8 +655,8 @@ spring:
 
 This will send a status 302 with a `Location:http://acme.org` header to perform a redirect.
 
-=== RemoveNonProxyHeaders GatewayFilter Factory
-The RemoveNonProxyHeaders GatewayFilter Factory removes headers from forwarded requests. The default list of headers that is removed comes from the https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-14#section-7.1.3[IETF].
+=== RemoveHopByHopHeadersFilter GatewayFilter Factory
+The RemoveHopByHopHeadersFilter GatewayFilter Factory removes headers from forwarded requests. The default list of headers that is removed comes from the https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-14#section-7.1.3[IETF].
 
 .The default removed headers are:
  *  Connection
@@ -697,6 +705,10 @@ spring:
 ----
 
 This will remove the `X-Response-Foo` header from the response before it is returned to the gateway client.
+
+To remove any kind of sensitive header you should configure this filter for any routes that you may
+want to do so.  In addition you can configure this filter once using `spring.cloud.gateway.default-filters`
+and have it applied to all routes.
 
 === RewritePath GatewayFilter Factory
 The RewritePath GatewayFilter Factory takes a path `regexp` parameter and a `replacement` parameter. This uses Java regular expressions for a flexible way to rewrite the request path.
@@ -979,6 +991,22 @@ public RouteLocator routes(RouteLocatorBuilder builder) {
 }
 ----
 
+
+=== Default Filters
+
+If you would like to add a filter and apply it to all routes you can use `spring.cloud.gateway.default-filters`.
+This property takes a list of filters
+
+.application.yml
+[source,yaml]
+----
+spring:
+  cloud:
+    gateway:
+      default-filters:
+      - AddResponseHeader=X-Response-Default-Foo, Default-Bar
+      - PrefixPath=/httpbin
+----
 
 == Global Filters
 
@@ -1615,7 +1643,7 @@ public GlobalFilter customGlobalPostFilter() {
         })
         .then();
 }
----
+----
 
 === Writing Custom Route Locators and Writers
 
